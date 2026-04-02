@@ -6,6 +6,8 @@ export default function StatusIndicator() {
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
+    let unmounted = false;
+
     const checkHealth = async () => {
       try {
         const response = await fetch("http://127.0.0.1:8765/health", {
@@ -24,16 +26,7 @@ export default function StatusIndicator() {
         const recording = await invoke<boolean>("get_recording_state");
         if (!unmounted) setIsRecording(recording);
       } catch {
-        // Tauri might not be ready yet
-      }
-    };
-
-    const checkRecording = async () => {
-      try {
-        const recording = await invoke<boolean>("get_recording_state");
-        setIsRecording(recording);
-      } catch {
-        // Ignore
+        // Tauri might not be ready
       }
     };
 
@@ -45,7 +38,7 @@ export default function StatusIndicator() {
       checkRecording();
     }, 2000);
 
-    return () => clearInterval(interval);
+    return () => { unmounted = true; clearInterval(interval); };
   }, []);
 
   return (
