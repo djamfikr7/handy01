@@ -7,6 +7,9 @@ pub mod state;
 
 use state::AppState;
 use state::Settings;
+use tauri::Emitter;
+use tauri::Manager;
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
 #[tauri::command]
 async fn toggle_recording(state: tauri::State<'_, AppState>) -> Result<bool, String> {
@@ -46,20 +49,41 @@ async fn get_current_text(state: tauri::State<'_, AppState>) -> Result<String, S
     Ok(state.sliding_window.lock().await.get_full())
 }
 
-#[tauri::command]
-async fn check_sidecar_health(state: tauri::State<'_, AppState>) -> Result<bool, String> {
-    match state.sidecar_client.health_check().await {
-        Ok(health) => Ok(health.whisper_loaded && health.correction_loaded),
-        Err(_) => Ok(false),
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let settings = Settings::load().unwrap_or_default();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, _event| {
+                    let handle: tauri::AppHandle = app.clone();
+
+                    std::thread::spawn(move || {
+                        let rt = tokio::runtime::Runtime::new().unwrap();
+                        rt.block_on(async {
+                            let state = handle.state::<AppState>();
+                            let is_recording = state.hotkey_manager.toggle_recording().await;
+                            *state.is_recording.lock().await = is_recording;
+
+                            if !is_recording {
+                                state.sliding_window.lock().await.lock();
+                            }
+
+                            let _ = handle.emit("recording-toggled", is_recording);
+                        });
+                    });
+                })
+                .build(),
+        )
+        .setup(|app| {
+            let shortcut = Shortcut::new(
+                Some(Modifiers::CONTROL | Modifiers::SHIFT),
+                Code::Space,
+            );
+            app.global_shortcut().register(shortcut)?;
+            Ok(())
+        })
         .manage(AppState::new(settings))
         .invoke_handler(tauri::generate_handler![
             toggle_recording,
@@ -67,7 +91,6 @@ pub fn run() {
             get_settings,
             update_settings,
             get_current_text,
-            check_sidecar_health,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
