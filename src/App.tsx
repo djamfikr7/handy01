@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import LiveTranscript from "./components/LiveTranscript";
 import StatusIndicator from "./components/StatusIndicator";
 import SettingsPanel from "./components/SettingsPanel";
@@ -9,6 +10,30 @@ function App() {
   const [correctionStyle, setCorrectionStyle] = useState<
     "inline" | "highlighted" | "draft-final"
   >("inline");
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    const checkRecording = async () => {
+      try {
+        const recording = await invoke<boolean>("get_recording_state");
+        setIsRecording(recording);
+      } catch {
+        // ignore
+      }
+    };
+    checkRecording();
+    const interval = setInterval(checkRecording, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleRecording = async () => {
+    try {
+      const recording = await invoke<boolean>("toggle_recording");
+      setIsRecording(recording);
+    } catch (e) {
+      console.error("Failed to toggle recording:", e);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-4">
@@ -25,6 +50,17 @@ function App() {
             </button>
           </div>
         </header>
+
+        <button
+          className={`w-full py-3 rounded-lg text-lg font-semibold transition-colors ${
+            isRecording
+              ? "bg-red-600 hover:bg-red-700 text-white"
+              : "bg-green-600 hover:bg-green-700 text-white"
+          }`}
+          onClick={handleToggleRecording}
+        >
+          {isRecording ? "⏹ Stop Recording" : "🎤 Start Recording"}
+        </button>
 
         <LiveTranscript correctionStyle={correctionStyle} />
 
@@ -47,7 +83,7 @@ function App() {
         </div>
 
         <p className="text-xs text-[var(--text-secondary)] text-center">
-          Press Ctrl+Shift+Space to toggle recording
+          Or press Ctrl+Shift+Space to toggle recording
         </p>
       </div>
 
