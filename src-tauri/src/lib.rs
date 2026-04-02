@@ -21,8 +21,8 @@ async fn toggle_recording(state: tauri::State<'_, AppState>) -> Result<bool, Str
 }
 
 #[tauri::command]
-async fn get_recording_state(state: tauri::State<'_, AppState>) -> bool {
-    *state.is_recording.lock().await
+async fn get_recording_state(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    Ok(*state.is_recording.lock().await)
 }
 
 #[tauri::command]
@@ -42,8 +42,8 @@ async fn update_settings(
 }
 
 #[tauri::command]
-async fn get_current_text(state: tauri::State<'_, AppState>) -> String {
-    state.sliding_window.lock().await.get_full()
+async fn get_current_text(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    Ok(state.sliding_window.lock().await.get_full())
 }
 
 #[tauri::command]

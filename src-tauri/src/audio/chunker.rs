@@ -25,7 +25,7 @@ impl Chunker {
         while self.buffer.len() >= self.chunk_size {
             let chunk: Vec<f32> = self.buffer[..self.chunk_size].to_vec();
             self.ready.push_back(chunk);
-            let keep = self.buffer.len() - self.chunk_size + self.overlap;
+            let _keep = self.buffer.len() - self.chunk_size + self.overlap;
             self.buffer.drain(..self.chunk_size - self.overlap);
         }
     }
