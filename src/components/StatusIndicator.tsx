@@ -8,10 +8,23 @@ export default function StatusIndicator() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const healthy = await invoke<boolean>("check_sidecar_health");
-        setSidecarHealthy(healthy);
+        const response = await fetch("http://127.0.0.1:8765/health", {
+          method: "GET",
+          signal: AbortSignal.timeout(1000),
+        });
+        const data = await response.json();
+        if (!unmounted) setSidecarHealthy(data.status === "healthy");
       } catch {
-        setSidecarHealthy(false);
+        if (!unmounted) setSidecarHealthy(false);
+      }
+    };
+
+    const checkRecording = async () => {
+      try {
+        const recording = await invoke<boolean>("get_recording_state");
+        if (!unmounted) setIsRecording(recording);
+      } catch {
+        // Tauri might not be ready yet
       }
     };
 
