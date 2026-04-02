@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0a0;
+  --accent: #0f3460;
+  --accent-bright: #e94560;
+  --highlight: #f0ad4e;
+  --success: #5cb85c;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.highlighted-correction {
+  border-bottom: 2px solid var(--highlight);
+  background: rgba(240, 173, 78, 0.1);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.draft-text {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.final-text {
+  color: var(--text-primary);
+}
+
+.recording-indicator {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
